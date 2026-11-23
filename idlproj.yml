@@ -19,7 +19,7 @@ targets:
     device_family: "1,2"
     link: [CalculatorKit, ContactsKit, FossifyCommons]
     sources: [Sources]
-    resources: [Resources/Assets.xcassets]
+    resources: [Resources/Assets.xcassets, Resources/AppIcons]
     frameworks: [SwiftUI, UIKit, Foundation, Contacts, PhotosUI]
     info:
       CFBundleDisplayName: Fossify

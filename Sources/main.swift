@@ -2,6 +2,7 @@ import CalculatorKit
 import ContactsKit
 import FossifyCommons
 import SwiftUI
+import UIKit
 
 /// One app bundled into the launcher.
 enum BundledApp: String, CaseIterable, Identifiable {
@@ -16,11 +17,12 @@ enum BundledApp: String, CaseIterable, Identifiable {
         }
     }
 
-    var icon: String {
-        switch self {
-        case .calculator: return "CalculatorIcon"
-        case .contacts: return "ContactsIcon"
-        }
+    /// The app's own 180 px icon, shipped as a loose PNG in AppIcons/.
+    var icon: UIImage? {
+        let name = info.name
+        return Bundle.main.path(forResource: name, ofType: "png", inDirectory: "AppIcons")
+            .flatMap(UIImage.init(contentsOfFile:))
+            ?? Bundle.main.path(forResource: name, ofType: "png").flatMap(UIImage.init(contentsOfFile:))
     }
 }
 
@@ -77,9 +79,15 @@ struct LauncherView: View {
 
     private func tile(_ app: BundledApp) -> some View {
         VStack(spacing: 8) {
-            Image(app.icon)
-                .resizable()
-                .frame(width: 64, height: 64)
+            Group {
+                if let icon = app.icon {
+                    Image(uiImage: icon).resizable()
+                } else {
+                    palette.primaryColor.overlay(
+                        Image(systemName: app.info.icon).font(.system(size: 28)).foregroundStyle(palette.onPrimary))
+                }
+            }
+            .frame(width: 64, height: 64)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             Text(app.info.name)
                 .font(.system(size: 13))
