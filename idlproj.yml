@@ -17,15 +17,34 @@ targets:
     version: "1.0.0"
     build_number: "1"
     device_family: "1,2"
-    link: [CalculatorKit, ContactsKit, FossifyCommons]
+    link: [CalculatorKit, CalendarKit, CameraKit, ClockKit, ContactsKit, DocumentsKit, FileManagerKit, GalleryKit, KeyboardKit,
+           MessagesKit, MusicPlayerKit, NotesKit, PaintKit, PhoneKit, ThankYouKit, VoiceRecorderKit, FossifyCommons]
     sources: [Sources]
-    resources: [Resources/Assets.xcassets, Resources/AppIcons]
-    frameworks: [SwiftUI, UIKit, Foundation, Contacts, PhotosUI]
+    # Holidays.bundle / CameraSounds.bundle: copies of calendar-ios' and camera-ios' Resources (idl resources must live
+    # in the target dir).
+    resources: [Resources/Assets.xcassets, Resources/AppIcons, Resources/Holidays.bundle, Resources/CameraSounds.bundle]
+    frameworks: [SwiftUI, UIKit, Foundation, UniformTypeIdentifiers, Contacts, ContactsUI, PhotosUI, Photos, AVKit,
+                 AVFoundation, AudioToolbox, ActivityKit, CoreImage, PencilKit, LocalAuthentication, EventKit,
+                 UserNotifications, QuickLook, QuickLookThumbnailing, CryptoKit, ImageIO, MediaPlayer, MessageUI,
+                 PDFKit, WebKit, CallKit, CoreLocation, CoreText]
+    # Clock: AlarmKit is iOS 26+, weak so the launcher still runs on 17-25.
+    ldflags: [-weak_framework, AlarmKit]
     info:
       CFBundleDisplayName: Fossify
       # Union of the bundled apps' Info.plist keys.
-      NSContactsUsageDescription: Contacts needs access to your contacts to show, edit and back them up.
-      NSCameraUsageDescription: Take a photo for a contact.
+      NSContactsUsageDescription: Contacts, Phone, Messages and Calendar use your contacts to show, edit and back them up, call them, pick recipients and add birthdays.
+      NSCameraUsageDescription: Camera takes photos and videos; Contacts, Messages and Gallery use it too.
+      NSMicrophoneUsageDescription: Record audio with Voice Recorder, and the sound of videos and messages.
+      NSPhotoLibraryUsageDescription: Gallery shows, organizes and edits your photos and videos; Messages attaches them.
+      NSPhotoLibraryAddUsageDescription: Save photos, videos, edited photos and drawings to your photo library.
+      NSLocationWhenInUseUsageDescription: Camera stores where a photo or video was taken when Save photo and video location is enabled.
+      PHPhotoLibraryPreventAutomaticLimitedAccessAlert: true
+      NSFaceIDUsageDescription: Unlock password protected apps, folders, notes and hidden items.
+      NSCalendarsFullAccessUsageDescription: Calendar needs access to your calendars to show and edit the events of synced calendars.
+      NSCalendarsUsageDescription: Calendar needs access to your calendars to show and edit the events of synced calendars.
+      NSAlarmKitUsageDescription: Clock rings your alarms and timers, even in silent mode.
+      NSAppleMusicUsageDescription: Music Player needs access to your music library to play the songs stored on this device.
+      UIBackgroundModes: [audio]
       UIFileSharingEnabled: true
       LSSupportsOpeningDocumentsInPlace: true
       UIApplicationSceneManifest:
@@ -39,10 +58,29 @@ targets:
         - UIInterfaceOrientationPortraitUpsideDown
         - UIInterfaceOrientationLandscapeLeft
         - UIInterfaceOrientationLandscapeRight
+      # Routed to an app by BundledApp.handling(_:).
       CFBundleDocumentTypes:
         - CFBundleTypeName: vCard
           LSHandlerRank: Alternate
           LSItemContentTypes: [public.vcard]
+        - CFBundleTypeName: iCalendar
+          LSHandlerRank: Alternate
+          LSItemContentTypes: [com.apple.ical.ics, public.calendar-event]
+        - CFBundleTypeName: Document
+          LSHandlerRank: Alternate
+          LSItemContentTypes: [com.adobe.pdf, org.openxmlformats.wordprocessingml.document, net.daringfireball.markdown,
+                               public.comma-separated-values-text, public.tab-separated-values-text, public.html,
+                               public.xhtml, public.plain-text, public.text, public.json, public.xml, public.yaml]
+        - CFBundleTypeName: Audio
+          LSHandlerRank: Alternate
+          LSItemContentTypes: [public.audio]
+        - CFBundleTypeName: Image
+          CFBundleTypeRole: Editor
+          LSHandlerRank: Alternate
+          LSItemContentTypes: [public.image, public.svg-image]
+        - CFBundleTypeName: File
+          LSHandlerRank: Alternate
+          LSItemContentTypes: [public.data, public.content]
     configurations:
       debug:
         entitlements:
@@ -55,12 +93,110 @@ targets:
     sources: [Sources]
     frameworks: [SwiftUI, UIKit, Foundation]
 
+  - name: CalendarKit
+    type: static
+    dir: ../calendar-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, EventKit, Contacts, UserNotifications]
+
+  - name: CameraKit
+    type: static
+    dir: ../camera-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, AVFoundation, AVKit, Photos, CoreLocation, CoreImage, ImageIO, AudioToolbox, QuickLook]
+
+  - name: ClockKit
+    type: static
+    dir: ../clock-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, UserNotifications, AVFoundation, AudioToolbox, ActivityKit]
+
   - name: ContactsKit
     type: static
     dir: ../contacts-ios
     link: [FossifyCommons]
     sources: [Sources]
     frameworks: [SwiftUI, UIKit, Foundation, Contacts, PhotosUI]
+
+  - name: DocumentsKit
+    type: static
+    dir: ../documents-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, UniformTypeIdentifiers, PDFKit, WebKit]
+
+  - name: FileManagerKit
+    type: static
+    dir: ../file-manager-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, QuickLook, QuickLookThumbnailing, LocalAuthentication, AVFoundation, CryptoKit, ImageIO, UniformTypeIdentifiers]
+
+  - name: GalleryKit
+    type: static
+    dir: ../gallery-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, Photos, PhotosUI, AVKit, AVFoundation, CoreImage, PencilKit, LocalAuthentication]
+
+  - name: KeyboardKit
+    type: static
+    dir: ../keyboard-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, AudioToolbox, CoreText, UniformTypeIdentifiers]
+
+  - name: MessagesKit
+    type: static
+    dir: ../messages-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, Contacts, ContactsUI, MessageUI, PhotosUI, QuickLook, AVFoundation, UserNotifications, UniformTypeIdentifiers, LocalAuthentication]
+
+  - name: MusicPlayerKit
+    type: static
+    dir: ../music-player-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, AVFoundation, MediaPlayer]
+
+  - name: NotesKit
+    type: static
+    dir: ../notes-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, LocalAuthentication, UniformTypeIdentifiers]
+
+  - name: PaintKit
+    type: static
+    dir: ../paint-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, PhotosUI, UniformTypeIdentifiers]
+
+  - name: PhoneKit
+    type: static
+    dir: ../phone-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, Contacts, ContactsUI, CallKit, AudioToolbox, UniformTypeIdentifiers]
+
+  - name: ThankYouKit
+    type: static
+    dir: ../thank-you-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation]
+
+  - name: VoiceRecorderKit
+    type: static
+    dir: ../voice-recorder-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, AVFoundation]
 
   - name: FossifyCommons
     type: static
