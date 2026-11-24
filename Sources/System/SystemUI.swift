@@ -22,10 +22,13 @@ final class AppTask: Identifiable {
 /// The app's window: ordinary level above the home screen's window, below the system UI overlay.
 final class AppWindow: UIWindow {}
 
-/// The app's root view controller: the iOS home indicator stays hidden (the navigation bar
-/// replaces it) and the first swipe from the top/bottom edge goes to the system UI overlay.
+/// The app's root view controller: with 3-button navigation the iOS home indicator stays visible
+/// below the navigation bar; gesture navigation's handle replaces it. The first swipe from the
+/// top/bottom edge goes to the system UI overlay.
 final class AppHostingController: UIHostingController<AnyView> {
-    override var prefersHomeIndicatorAutoHidden: Bool { true }
+    override var prefersHomeIndicatorAutoHidden: Bool {
+        MainActor.assumeIsolated { SystemUI.shared.navMode == .gestural }
+    }
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { [.top, .bottom] }
 }
 
@@ -89,8 +92,9 @@ final class SystemUI {
     var navMode: NavigationMode { config.navigationMode }
 
     /// What the navigation bar / gesture area covers at the bottom of the screen; apps are inset by it.
+    /// The 3-button bar sits above the iOS home indicator (it doesn't cover it).
     var navInset: CGFloat {
-        navMode == .threeButton ? max(Self.navBarHeight, rawInsets.bottom) : max(rawInsets.bottom, 20)
+        navMode == .threeButton ? Self.navBarHeight + rawInsets.bottom : max(rawInsets.bottom, 20)
     }
 
     /// The status bar strip that pulls the shade down.
@@ -229,13 +233,16 @@ final class SystemUI {
         let alreadyShown = foreground === task && task.window?.isHidden == false
         foreground = task
         if !alreadyShown, let window = task.window {
+            // Only the content view is scaled: a transformed UIWindow gets its safe area insets
+            // from the shrunken frame (notch / home indicator insets go wrong).
+            let content = window.rootViewController?.view
             window.alpha = 0
-            window.transform = CGAffineTransform(scaleX: 0.92, y: 0.92)
+            content?.transform = CGAffineTransform(scaleX: 0.92, y: 0.92)
             window.isHidden = false
             window.makeKey()
             UIView.animate(withDuration: 0.22, delay: 0, options: [.curveEaseOut]) {
                 window.alpha = 1
-                window.transform = .identity
+                content?.transform = .identity
             }
         }
         updateStatusBar()
@@ -245,19 +252,20 @@ final class SystemUI {
     private func moveToBack(_ task: AppTask, animated: Bool) {
         captureSnapshot(task)
         guard let window = task.window else { return }
+        let content = window.rootViewController?.view
         let finish = {
             window.isHidden = true
             window.alpha = 1
-            window.transform = .identity
+            content?.transform = .identity
             if !task.app.staysAliveInRecents { task.window = nil }
         }
         if animated {
             UIView.animate(withDuration: 0.18, delay: 0, options: [.curveEaseIn]) {
                 window.alpha = 0
-                window.transform = CGAffineTransform(scaleX: 0.92, y: 0.92)
+                content?.transform = CGAffineTransform(scaleX: 0.92, y: 0.92)
             } completion: { _ in
                 // The app may have come back in the meantime.
-                if SystemUI.shared.foreground !== task { finish() } else { window.alpha = 1; window.transform = .identity }
+                if SystemUI.shared.foreground !== task { finish() } else { window.alpha = 1; content?.transform = .identity }
             }
         } else {
             finish()

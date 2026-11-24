@@ -223,9 +223,10 @@ struct BackGestureEdges: View {
 extension SystemUI {
     /// The foreground app shrinks while swiping up from the handle.
     func applyHomeGestureFeedback() {
-        guard let window = foreground?.window else { return }
+        guard let view = foreground?.window?.rootViewController?.view else { return }
         let scale = 1 - homeGestureProgress * 0.12
-        window.transform = CGAffineTransform(scaleX: scale, y: scale)
+        // The content view, not the window: a transformed window gets wrong safe area insets.
+        view.transform = CGAffineTransform(scaleX: scale, y: scale)
             .translatedBy(x: 0, y: -homeGestureProgress * 60)
     }
 }

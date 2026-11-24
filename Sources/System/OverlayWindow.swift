@@ -32,7 +32,9 @@ final class OverlayController: UIHostingController<AnyView> {
         SystemUI.shared.recentsVisible ? .lightContent : .default
     }
     override var prefersStatusBarHidden: Bool { false }
-    override var prefersHomeIndicatorAutoHidden: Bool { true }
+    override var prefersHomeIndicatorAutoHidden: Bool {
+        MainActor.assumeIsolated { SystemUI.shared.navMode == .gestural }
+    }
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { [.top, .bottom] }
 }
 
