@@ -17,8 +17,8 @@ targets:
     version: "1.0.0"
     build_number: "1"
     device_family: "1,2"
-    link: [CalculatorKit, CalendarKit, CameraKit, ClockKit, ContactsKit, DocumentsKit, FileManagerKit, GalleryKit, KeyboardKit,
-           MessagesKit, MusicPlayerKit, NotesKit, PaintKit, PhoneKit, ThankYouKit, VoiceRecorderKit, FossifyCommons]
+    link: [FossifyWidgetIntents, BrowserKit, CalculatorKit, CalendarKit, CameraKit, ClockKit, ContactsKit, DocumentsKit, FileManagerKit, GalleryKit, KeyboardKit,
+           MessagesKit, MusicPlayerKit, NotesKit, PaintKit, PhoneKit, SettingsKit, ThankYouKit, VoiceRecorderKit, FossifyCommons]
     sources: [Sources]
     # Holidays.bundle / CameraSounds.bundle: copies of calendar-ios' and camera-ios' Resources (idl resources must live
     # in the target dir).
@@ -26,11 +26,11 @@ targets:
     resources: [Resources/Assets.xcassets, Resources/AppIcons, Resources/Holidays.bundle, Resources/CameraSounds.bundle,
                 Resources/Wallpapers.bundle]
     # Keyboard's system keyboard extension (KeyboardKit finds it as PlugIns/KeyboardExtension.appex).
-    embed: [KeyboardExtension]
+    embed: [KeyboardExtension, WidgetsExtension]
     frameworks: [SwiftUI, UIKit, Foundation, UniformTypeIdentifiers, Contacts, ContactsUI, PhotosUI, Photos, AVKit,
                  AVFoundation, AudioToolbox, ActivityKit, CoreImage, PencilKit, LocalAuthentication, EventKit,
                  UserNotifications, QuickLook, QuickLookThumbnailing, CryptoKit, ImageIO, MediaPlayer, MessageUI,
-                 PDFKit, WebKit, CallKit, CoreLocation, CoreText]
+                 PDFKit, WebKit, CallKit, CoreLocation, CoreText, WidgetKit, AppIntents]
     # Clock: AlarmKit is iOS 26+, weak so the launcher still runs on 17-25.
     ldflags: [-weak_framework, AlarmKit]
     info:
@@ -41,7 +41,9 @@ targets:
       NSMicrophoneUsageDescription: Record audio with Voice Recorder, and the sound of videos and messages.
       NSPhotoLibraryUsageDescription: Gallery shows, organizes and edits your photos and videos; Messages attaches them.
       NSPhotoLibraryAddUsageDescription: Save photos, videos, edited photos and drawings to your photo library.
-      NSLocationWhenInUseUsageDescription: Camera stores where a photo or video was taken when Save photo and video location is enabled.
+      NSLocationWhenInUseUsageDescription: Camera stores where a photo or video was taken; Browser shares your location with sites you allow.
+      NSAppTransportSecurity:
+        NSAllowsArbitraryLoadsInWebContent: true
       PHPhotoLibraryPreventAutomaticLimitedAccessAlert: true
       NSFaceIDUsageDescription: Unlock password protected apps, folders, notes and hidden items.
       NSCalendarsFullAccessUsageDescription: Calendar needs access to your calendars to show and edit the events of synced calendars.
@@ -74,6 +76,9 @@ targets:
         - CFBundleTypeName: iCalendar
           LSHandlerRank: Alternate
           LSItemContentTypes: [com.apple.ical.ics, public.calendar-event]
+        - CFBundleTypeName: Web archive
+          LSHandlerRank: Alternate
+          LSItemContentTypes: [com.apple.webarchive]
         - CFBundleTypeName: Document
           LSHandlerRank: Alternate
           LSItemContentTypes: [com.adobe.pdf, org.openxmlformats.wordprocessingml.document, net.daringfireball.markdown,
@@ -89,9 +94,9 @@ targets:
         - CFBundleTypeName: File
           LSHandlerRank: Alternate
           LSItemContentTypes: [public.data, public.content]
-    # Keyboard settings, pinned clips and colors shared with the keyboard extension.
+    # Keyboard settings/clips shared with the keyboard extension; widget snapshots shared with the widgets extension.
     entitlements:
-      com.apple.security.application-groups: [group.org.fossify.keyboard.ios]
+      com.apple.security.application-groups: [group.org.fossify.keyboard.ios, group.org.fossify.launcher.ios]
     configurations:
       debug:
         entitlements:
@@ -121,6 +126,46 @@ targets:
           RequestsOpenAccess: true
     entitlements:
       com.apple.security.application-groups: [group.org.fossify.keyboard.ios]
+
+  # Home-screen widgets (widgets-ios): WidgetKit extension with the Fossify apps' widgets.
+  - name: WidgetsExtension
+    type: appex
+    dir: ../widgets-ios
+    bundle_id: org.fossify.launcher.ios.widgets
+    version: "1.0.0"
+    build_number: "1"
+    device_family: "1,2"
+    link: [CalculatorKit, FossifyWidgetIntents, FossifyCommons]
+    sources: [Extension]
+    frameworks: [SwiftUI, UIKit, Foundation, WidgetKit, AppIntents]
+    info:
+      CFBundleDisplayName: Fossify Widgets
+      NSExtension:
+        NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      com.apple.security.application-groups: [group.org.fossify.launcher.ios]
+
+  # Widget intents that run in the app process (music / record buttons).
+  - name: FossifyWidgetIntents
+    type: static
+    dir: ../widgets-ios
+    link: [FossifyCommons]
+    sources: [Shared]
+    frameworks: [Foundation, AppIntents]
+
+  - name: BrowserKit
+    type: static
+    dir: ../browser-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, WebKit, CoreLocation]
+
+  - name: SettingsKit
+    type: static
+    dir: ../settings-ios
+    link: [FossifyCommons]
+    sources: [Sources]
+    frameworks: [SwiftUI, UIKit, Foundation, UserNotifications, UniformTypeIdentifiers]
 
   - name: CalculatorKit
     type: static

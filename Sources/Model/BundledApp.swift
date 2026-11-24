@@ -1,3 +1,4 @@
+import BrowserKit
 import CalculatorKit
 import CalendarKit
 import CameraKit
@@ -13,6 +14,7 @@ import MusicPlayerKit
 import NotesKit
 import PaintKit
 import PhoneKit
+import SettingsKit
 import ThankYouKit
 import UIKit
 import UniformTypeIdentifiers
@@ -21,13 +23,14 @@ import VoiceRecorderKit
 /// One app bundled into the launcher: what the Android launcher calls an installed app.
 /// Its raw value is the item's "package name" in the home layout.
 enum BundledApp: String, CaseIterable, Identifiable {
-    case calculator, calendar, camera, clock, contacts, documents, fileManager, gallery, keyboard, messages, musicPlayer, notes, paint,
-         phone, thankYou, voiceRecorder
+    case browser, calculator, calendar, camera, clock, contacts, documents, fileManager, gallery, keyboard, messages, musicPlayer, notes,
+         paint, phone, settings, thankYou, voiceRecorder
 
     var id: Self { self }
 
     var info: AppInfo {
         switch self {
+        case .browser: return .browser
         case .calculator: return .calculator
         case .calendar: return .calendar
         case .camera: return .camera
@@ -42,6 +45,7 @@ enum BundledApp: String, CaseIterable, Identifiable {
         case .notes: return .notes
         case .paint: return .paint
         case .phone: return .phone
+        case .settings: return .settings
         case .thankYou: return .thankYou
         case .voiceRecorder: return .voiceRecorder
         }
@@ -57,6 +61,7 @@ enum BundledApp: String, CaseIterable, Identifiable {
         let type = UTType(filenameExtension: ext)
         func conforms(_ t: UTType) -> Bool { type?.conforms(to: t) ?? false }
         if url.hasDirectoryPath { return .fileManager }
+        if url.scheme == "http" || url.scheme == "https" { return .browser }
         switch ext {
         case "vcf": return .contacts
         case "ics": return .calendar
@@ -65,13 +70,31 @@ enum BundledApp: String, CaseIterable, Identifiable {
             if name.contains("messages") || name.contains("sms") || name.contains("mms") { return .messages }
             if name.contains("notes") { return .notes }
             return .documents
-        case "pdf", "docx", "md", "markdown", "csv", "tsv", "html", "htm", "xhtml", "yaml", "yml": return .documents
+        case "html", "htm", "xhtml", "webarchive": return .browser
+        case "pdf", "docx", "md", "markdown", "csv", "tsv", "yaml", "yml": return .documents
         default: break
         }
         if conforms(.audio) { return .musicPlayer }
         if conforms(.image) { return .paint }
         if conforms(.text) { return .documents }
         return .fileManager
+    }
+}
+
+extension BundledApp {
+    /// The app behind a home-screen widget link (widgets-ios), after letting it handle the link.
+    @MainActor
+    static func widgetApp(_ id: String, url: URL) -> BundledApp? {
+        switch id {
+        case "calculator": CalculatorWidgetData.handle(url); return .calculator
+        case "calendar": CalendarWidgetData.handle(url); return .calendar
+        case "clock": ClockWidgetData.handle(url); return .clock
+        case "gallery": GalleryWidgetData.handle(url); return .gallery
+        case "musicplayer": MusicPlayerWidgetData.handle(url); return .musicPlayer
+        case "notes": NotesWidgetData.handle(url); return .notes
+        case "voicerecorder": VoiceRecorderWidgetData.handle(url); return .voiceRecorder
+        default: return nil
+        }
     }
 }
 

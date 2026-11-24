@@ -58,4 +58,19 @@ enum Wallpapers {
         let y = (Double(pixel[0]) * 299 + Double(pixel[1]) * 587 + Double(pixel[2]) * 114) / 1000
         return y >= 149
     }
+
+    /// RegionSamplingHelper: luminance (0...1) of the wallpaper behind the navigation bar (its
+    /// bottom 8%), for light or dark navigation icons over the home screen.
+    static func bottomLuminance(_ image: UIImage) -> Double {
+        guard let cg = image.cgImage else { return 0 }
+        let stripHeight = max(1, Int(Double(cg.height) * 0.08))
+        guard let strip = cg.cropping(to: CGRect(x: 0, y: cg.height - stripHeight, width: cg.width, height: stripHeight)) else { return 0 }
+        var pixel = [UInt8](repeating: 0, count: 4)
+        guard let ctx = CGContext(data: &pixel, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return 0 }
+        ctx.interpolationQuality = .medium
+        ctx.draw(strip, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+        return (Double(pixel[0]) * 0.299 + Double(pixel[1]) * 0.587 + Double(pixel[2]) * 0.114) / 255
+    }
 }

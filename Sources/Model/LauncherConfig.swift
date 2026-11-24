@@ -35,6 +35,10 @@ final class LauncherConfig {
     var wallpaper: String { didSet { d.set(wallpaper, forKey: "launcher_wallpaper") } }
     /// Bumped whenever the custom wallpaper file is replaced.
     var wallpaperRevision: Int { didSet { d.set(wallpaperRevision, forKey: "launcher_wallpaper_revision") } }
+    /// Settings.Secure.NAVIGATION_MODE: 3-button (default) or gesture navigation.
+    var navigationMode: NavigationMode { didSet { d.set(navigationMode.rawValue, forKey: "launcher_navigation_mode") } }
+    /// Settings.Secure "sysui_qs_tiles": the quick settings tiles, in order.
+    var qsTiles: [QSTileSpec] { didSet { d.set(qsTiles.map(\.rawValue), forKey: "launcher_qs_tiles") } }
 
     private init() {
         wasHomeScreenInit = d.bool(forKey: "launcher_was_home_screen_init")
@@ -48,5 +52,20 @@ final class LauncherConfig {
         showHomeAppLabels = d.object(forKey: "launcher_show_home_app_labels") as? Bool ?? true
         wallpaper = d.string(forKey: "launcher_wallpaper") ?? DEFAULT_WALLPAPER
         wallpaperRevision = d.integer(forKey: "launcher_wallpaper_revision")
+        navigationMode = NavigationMode(rawValue: d.integer(forKey: "launcher_navigation_mode")) ?? .threeButton
+        qsTiles = (d.stringArray(forKey: "launcher_qs_tiles")?.compactMap(QSTileSpec.init(rawValue:))) ?? QSTileSpec.defaults
+    }
+}
+
+/// WindowManagerPolicyConstants.NAV_BAR_MODE_* (2-button is gone from AOSP's picker too).
+enum NavigationMode: Int, CaseIterable {
+    case threeButton = 0
+    case gestural = 2
+
+    var title: String { self == .gestural ? "Gesture navigation" : "3-button navigation" }
+    var summary: String {
+        self == .gestural
+            ? "To go Home, swipe up from the bottom of the screen. To switch apps, swipe up from the bottom, hold, then release. To go back, swipe from either the left or right edge."
+            : "Go back, Home, and switch apps with buttons at the bottom of your screen."
     }
 }

@@ -72,6 +72,8 @@ final class HomeController {
     private(set) var searchFocusRequest = 0
     private(set) var drawerResetRequest = 0
     @ObservationIgnored var launch: (BundledApp, URL?) -> Void = { _, _ in }
+    /// StatusBarManager.expandNotificationsPanel: the launcher's own notification shade.
+    @ObservationIgnored var expandNotifications: () -> Void = {}
 
     // MainActivity touch state
     @ObservationIgnored private var touchDown: CGPoint?
@@ -113,11 +115,35 @@ final class HomeController {
         }
     }
 
-    /// onNewIntent while an app was in front (the hosted app's home button): close the drawers.
+    /// onNewIntent (the navigation bar's Home): close the drawers, the folder and launcher screens.
     func homePressed() {
         if isAllAppsExpanded { hideAllApps() }
         if isWidgetsExpanded { hideWidgets() }
         allAppsQuery = ""
+        closeFolder()
+        hideResizeLines()
+        itemMenu = nil
+        mainMenuAnchor = nil
+        showSettings = false
+        showWallpapers = false
+        renaming = nil
+        aboutApp = nil
+    }
+
+    /// onBackPressedCompat: drawer search, then the drawers, the resize frame and the folder.
+    func backPressed() {
+        if itemMenu != nil || mainMenuAnchor != nil {
+            itemMenu = nil
+            mainMenuAnchor = nil
+        } else if isAllAppsExpanded {
+            if !allAppsQuery.isEmpty { allAppsQuery = "" } else { hideAllApps() }
+        } else if isWidgetsExpanded {
+            if !widgetsQuery.isEmpty { widgetsQuery = "" } else { hideWidgets() }
+        } else if resizedWidgetId != nil {
+            hideResizeLines()
+        } else if openFolderId != nil {
+            closeFolder()
+        }
     }
 
     // MARK: queries
@@ -275,6 +301,8 @@ final class HomeController {
             hideAllApps()
         } else if isWidgetsExpanded {
             hideWidgets()
+        } else {
+            expandNotifications()
         }
     }
 

@@ -6,6 +6,9 @@ enum SettingsRoute: Hashable {
     case customizeColors
     case about
     case hiddenIcons
+    case wallpaper
+    case navigationMode
+    case quickSettingsTiles
 }
 
 @MainActor
@@ -29,6 +32,9 @@ struct LauncherSettingsRoot: View {
                         case .customizeColors: CustomizeColorsView()
                         case .about: AboutView(app: .launcher)
                         case .hiddenIcons: HiddenIconsView()
+                        case .wallpaper: WallpaperPickerView()
+                        case .navigationMode: NavigationModeView()
+                        case .quickSettingsTiles: QSEditView()
                         }
                     }
                     .toolbar(.hidden, for: .navigationBar)
@@ -42,18 +48,13 @@ struct LauncherSettingsRoot: View {
     }
 }
 
-private enum CountDialog: Identifiable {
-    case drawerColumns, homeRows, homeColumns
-    var id: Self { self }
-}
-
 /// SettingsActivity: every setting that applies on iOS (no "use English" / language / double tap
 /// to lock, which iOS handles itself or doesn't allow).
 struct SettingsView: View {
     @Environment(SettingsRouter.self) private var router
     @Environment(LauncherConfig.self) private var config
     @Environment(\.palette) private var palette
-    @State private var dialog: CountDialog?
+    @State private var dialog: HomeCountDialog?
 
     var body: some View {
         @Bindable var config = config
@@ -69,44 +70,20 @@ struct SettingsView: View {
                     Text("General").sectionHeader(palette)
                     SettingsItem("Manage hidden icons") { router.push(.hiddenIcons) }
 
-                    Text("App drawer").sectionHeader(palette)
-                    SettingsItem("Column count", value: "\(config.drawerColumnCount)") { dialog = .drawerColumns }
-                    SettingsToggle("Show search bar", isOn: $config.showSearchBar)
-                    if config.showSearchBar {
-                        SettingsToggle("Automatically show keyboard in drawer", isOn: $config.autoShowKeyboardInAppDrawer)
-                    }
-                    SettingsToggle("Close app drawer on opening an app", isOn: $config.closeAppDrawer)
-                    SettingsToggle("Show app labels", isOn: $config.showDrawerAppLabels)
+                    HomeScreenSettingsSections(config: config, dialog: $dialog)
 
-                    Text("Home screen").sectionHeader(palette)
-                    SettingsItem("Row count", value: "\(config.homeRowCount)") { dialog = .homeRows }
-                    SettingsItem("Column count", value: "\(config.homeColumnCount)") { dialog = .homeColumns }
-                    SettingsToggle("Show app labels", isOn: $config.showHomeAppLabels)
+                    Text("System").sectionHeader(palette)
+                    SettingsItem("Wallpaper") { router.push(.wallpaper) }
+                    SettingsItem("System navigation", value: config.navigationMode.title) { router.push(.navigationMode) }
+                    SettingsItem("Edit quick settings tiles") { router.push(.quickSettingsTiles) }
                 }
                 .padding(.bottom, 32)
             }
         }
         .background(palette.backgroundColor.ignoresSafeArea())
-        .sheet(item: $dialog) { d in
-            switch d {
-            case .drawerColumns:
-                RadioDialog(title: nil, items: (1...MAX_COLUMN_COUNT).map { ($0, columns($0)) }, selected: config.drawerColumnCount) {
-                    config.drawerColumnCount = $0
-                }
-                .fossifyTheme()
-            case .homeRows:
-                RadioDialog(title: nil, items: (MIN_ROW_COUNT...MAX_ROW_COUNT).map { ($0, $0 == 1 ? "1 row" : "\($0) rows") },
-                            selected: config.homeRowCount) { config.homeRowCount = $0 }
-                    .fossifyTheme()
-            case .homeColumns:
-                RadioDialog(title: nil, items: (MIN_COLUMN_COUNT...MAX_COLUMN_COUNT).map { ($0, columns($0)) },
-                            selected: config.homeColumnCount) { config.homeColumnCount = $0 }
-                    .fossifyTheme()
-            }
-        }
+        .homeCountDialogs($dialog, config: config)
     }
 
-    private func columns(_ n: Int) -> String { n == 1 ? "1 column" : "\(n) columns" }
 }
 
 extension AppInfo {
