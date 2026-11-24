@@ -22,7 +22,11 @@ targets:
     sources: [Sources]
     # Holidays.bundle / CameraSounds.bundle: copies of calendar-ios' and camera-ios' Resources (idl resources must live
     # in the target dir).
-    resources: [Resources/Assets.xcassets, Resources/AppIcons, Resources/Holidays.bundle, Resources/CameraSounds.bundle]
+    # Wallpapers.bundle: AOSP wallpapers (Apache-2.0, see its NOTICE) offered as home screen backgrounds.
+    resources: [Resources/Assets.xcassets, Resources/AppIcons, Resources/Holidays.bundle, Resources/CameraSounds.bundle,
+                Resources/Wallpapers.bundle]
+    # Keyboard's system keyboard extension (KeyboardKit finds it as PlugIns/KeyboardExtension.appex).
+    embed: [KeyboardExtension]
     frameworks: [SwiftUI, UIKit, Foundation, UniformTypeIdentifiers, Contacts, ContactsUI, PhotosUI, Photos, AVKit,
                  AVFoundation, AudioToolbox, ActivityKit, CoreImage, PencilKit, LocalAuthentication, EventKit,
                  UserNotifications, QuickLook, QuickLookThumbnailing, CryptoKit, ImageIO, MediaPlayer, MessageUI,
@@ -45,6 +49,10 @@ targets:
       NSAlarmKitUsageDescription: Clock rings your alarms and timers, even in silent mode.
       NSAppleMusicUsageDescription: Music Player needs access to your music library to play the songs stored on this device.
       UIBackgroundModes: [audio]
+      # Opened by the keyboard extension's settings / manage clipboard buttons.
+      CFBundleURLTypes:
+        - CFBundleURLName: org.fossify.launcher.ios.keyboard
+          CFBundleURLSchemes: [fossify-keyboard]
       UIFileSharingEnabled: true
       LSSupportsOpeningDocumentsInPlace: true
       UIApplicationSceneManifest:
@@ -81,10 +89,38 @@ targets:
         - CFBundleTypeName: File
           LSHandlerRank: Alternate
           LSItemContentTypes: [public.data, public.content]
+    # Keyboard settings, pinned clips and colors shared with the keyboard extension.
+    entitlements:
+      com.apple.security.application-groups: [group.org.fossify.keyboard.ios]
     configurations:
       debug:
         entitlements:
           get-task-allow: true
+
+  # The system keyboard (Settings > General > Keyboard > Keyboards > Add New Keyboard > Fossify Keyboard).
+  - name: KeyboardExtension
+    type: appex
+    dir: ../keyboard-ios
+    bundle_id: org.fossify.launcher.ios.keyboard
+    version: "1.0.0"
+    build_number: "1"
+    device_family: "1,2"
+    link: [KeyboardKit, FossifyCommons]
+    sources: [Extension]
+    frameworks: [SwiftUI, UIKit, Foundation, AudioToolbox, CoreText, UniformTypeIdentifiers]
+    ldflags: [-e, _NSExtensionMain]
+    info:
+      CFBundleDisplayName: Fossify Keyboard
+      NSExtension:
+        NSExtensionPointIdentifier: com.apple.keyboard-service
+        NSExtensionPrincipalClass: KeyboardViewController
+        NSExtensionAttributes:
+          IsASCIICapable: false
+          PrefersRightToLeft: false
+          PrimaryLanguage: mul
+          RequestsOpenAccess: true
+    entitlements:
+      com.apple.security.application-groups: [group.org.fossify.keyboard.ios]
 
   - name: CalculatorKit
     type: static

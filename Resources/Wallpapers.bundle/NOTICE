@@ -1,0 +1,5 @@
+Default wallpapers from the Android Open Source Project (Apache License 2.0):
+- "Android 4.1-6.0", "Android 7-12", "Android 14": platform/frameworks/base core/res/res/drawable-sw720dp-nodpi/default_wallpaper (android-4.1.1_r1, android-7.0.0_r1, android-14.0.0_r1)
+- "Launcher NN": platform/packages/apps/Launcher2 res/drawable-xhdpi/wallpaper_NN.jpg (android-4.1.1_r1)
+- Named ones: platform/packages/apps/Launcher2 res/drawable-sw720dp-nodpi/wallpaper_<name>.jpg (android-4.1.1_r1)
+Re-encoded as JPEG.
